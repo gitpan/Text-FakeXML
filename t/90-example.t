@@ -19,7 +19,7 @@ $cfg->xml_elt_close("gconf");
 is($data, <<EOD, "compare");
 <?xml version='1.0'?>
 <gconf>
-  <entry name='geometry_collection' mtime='1164190071' type='string'>
+  <entry name="geometry_collection" mtime="1164190071" type="string">
     <stringvalue>440x350+1063+144</stringvalue>
   </entry>
 </gconf>

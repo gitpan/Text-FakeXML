@@ -9,15 +9,15 @@ use Carp;
 
 =head1 NAME
 
-Text::FakeXML - Creating text with <things>.
+Text::FakeXML - Creating text with E<lt>thingsE<gt>.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
@@ -91,11 +91,17 @@ sub new {
        _fh => select,
       }, $pkg;
 
+    my $version;
+    my $encoding;
     if ( exists $args{fh} ) {
 	$self->{_fh} = delete $args{fh};
     }
     if ( exists $args{version} ) {
-	$self->print("<?xml version='", delete $args{version}, "'?>\n");
+	$version = delete $args{version};
+    }
+    if ( exists $args{encoding} ) {
+	$encoding = delete $args{encoding};
+	$version ||= '1.0';
     }
     if ( exists $args{indent} ) {
 	$self->{_indent} = delete $args{indent};
@@ -109,6 +115,12 @@ sub new {
     croak(__PACKAGE__, ": Unhandled constructor attributes: ",
 	  join(" ", sort keys %args))
       if %args;
+
+    if ( $version ) {
+	$self->print("<?xml version='$version'",
+		     $encoding ? " encoding='$encoding'" : "",
+		     "?>\n");
+    }
 
     $self;
 }
@@ -145,7 +157,7 @@ sub xml_elt_open {
       if @atts % 2;
     my $t = "<$tag";
     while ( @atts ) {
-	$t .= " " . shift(@atts) . "='" . xml_text(shift(@atts)) . "'";
+	$t .= " " . shift(@atts) . "=" . xml_quote(xml_text(shift(@atts))) . "";
     }
     $t .= ">";
     $self->printi("$t\n");
@@ -195,7 +207,8 @@ sub xml_elt {
       if @atts % 2;
     my $t = "<$tag";
     while ( @atts ) {
-	$t .= " " . shift(@atts) . "='" . xml_text(shift(@atts)) . "'";
+	$t .= " " . shift(@atts) . "=" .
+	  xml_quote(xml_text(shift(@atts))) . "";
     }
     if ( defined $val ) {
 	$self->printi($t, ">", xml_text($val), "</$tag>\n");
@@ -203,6 +216,17 @@ sub xml_elt {
     else {
 	$self->printi("$t />\n");
     }
+}
+
+=head2 xml_comment
+
+Outputs a comment. Arguments contain the comment text.
+
+=cut
+
+sub xml_comment {
+    my ($self, @a) = @_;
+    $self->printi("<!-- ", xml_text("@a"), " -->\n");
 }
 
 # XMLise text.
@@ -215,6 +239,12 @@ sub xml_text {
 	s/>/&gt;/g;
 	return $_;
     }
+}
+
+sub xml_quote {
+    my $t = shift;
+    return '"'.$t.'"' unless $t =~ /"/;
+    return "'".$t."'";
 }
 
 =head1 AUTHOR
